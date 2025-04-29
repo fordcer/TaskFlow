@@ -5,13 +5,14 @@ import DashboardShell from "@/components/dashboard/dashboard-shell";
 import TaskButton from "@/components/dashboard/task-button";
 import TaskItem from "@/components/dashboard/task-item";
 import { EmptyPlaceholder } from "@/components/empty-placeholder";
-import { ModeToggle } from "@/components/toggle-theme";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getTasksByStatus, Task } from "@/lib/task-service";
 import { AnimatePresence, motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [tasks, setTasks] = React.useState<Task[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -29,7 +30,7 @@ export default function DashboardPage() {
     };
 
     fetchTasks();
-  }, []);
+  }, [router]);
 
   const handleStatusChange = async (status: string) => {
     setIsLoading(true);
@@ -122,9 +123,6 @@ export default function DashboardPage() {
 
   return (
     <DashboardShell>
-      <div className="flex justify-end items-center">
-        <ModeToggle />
-      </div>
       <DashboardHeader heading="Tasks" text="Create and manage your tasks.">
         <TaskButton mode="create" />
       </DashboardHeader>

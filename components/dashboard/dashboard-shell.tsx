@@ -17,7 +17,7 @@ export default function DashboardShell({
       transition={{ duration: 0.5 }}
       className="flex flex-col min-h-screen"
     >
-      <main className="container mx-auto py-8">
+      <main className="w-full py-8">
         <div className="flex flex-col gap-10">{children}</div>
       </main>
     </motion.div>

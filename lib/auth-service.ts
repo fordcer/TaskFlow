@@ -1,85 +1,79 @@
-// This is a mock authentication service
-// In a real app, you would use a proper authentication system
+import { getServerSession } from "next-auth/next";
+import { redirect } from "next/navigation";
+import bcrypt from "bcryptjs";
 
-// Mock user data
-const users = [
-  {
-    id: "1",
-    name: "Demo User",
-    email: "demo@example.com",
-    password: "password", // In a real app, this would be hashed
-  },
-];
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 
-// Check if user is authenticated
-export function isAuthenticated(): boolean {
-  // In a real app, you would check for a valid session/token
-  // For this demo, we'll just return true to simulate an authenticated user
-  return true;
+export async function getSession() {
+  return await getServerSession(authOptions);
 }
 
-// Mock login function
-export async function mockLogin(
-  email: string,
-  password: string
-): Promise<boolean> {
-  // Simulate API call delay
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+export async function getCurrentUser() {
+  const session = await getSession();
 
-  // Check if user exists and password matches
-  const user = users.find((u) => u.email === email && u.password === password);
-
-  if (user) {
-    // In a real app, you would set a session/token here
-    localStorage.setItem(
-      "user",
-      JSON.stringify({ id: user.id, name: user.name, email: user.email })
-    );
-    return true;
+  if (!session?.user?.email) {
+    return null;
   }
 
-  // For demo purposes, allow login with any credentials
-  if (email && password) {
-    localStorage.setItem(
-      "user",
-      JSON.stringify({ id: "demo", name: "Demo User", email })
-    );
-    return true;
+  const user = await prisma.user.findUnique({
+    where: {
+      email: session.user.email,
+    },
+  });
+
+  if (!user) {
+    return null;
   }
 
-  return false;
+  return {
+    ...user,
+    password: undefined,
+  };
 }
 
-// Mock signup function
-export async function mockSignup(
-  email: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  password: string
-): Promise<boolean> {
-  // Simulate API call delay
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+export async function requireAuth() {
+  const session = await getSession();
 
-  // Check if user already exists
-  const userExists = users.some((u) => u.email === email);
-
-  if (userExists) {
-    return false;
+  if (!session?.user) {
+    redirect("/login");
   }
 
-  // In a real app, you would create a new user in the database
-  // For this demo, we'll just simulate a successful signup
-  localStorage.setItem("user", JSON.stringify({ id: "new-user", email }));
-
-  return true;
+  return session;
 }
 
-// Mock logout function
-export async function mockLogout(): Promise<boolean> {
-  // Simulate API call delay
-  await new Promise((resolve) => setTimeout(resolve, 500));
+export async function createUser(data: {
+  name: string;
+  email: string;
+  password: string;
+}) {
+  const hashedPassword = await bcrypt.hash(data.password, 10);
 
-  // In a real app, you would invalidate the session/token
-  localStorage.removeItem("user");
+  const existingUser = await prisma.user.findUnique({
+    where: {
+      email: data.email,
+    },
+  });
 
-  return true;
+  if (existingUser) {
+    throw new Error("User already exists");
+  }
+
+  const user = await prisma.user.create({
+    data: {
+      name: data.name,
+      email: data.email,
+      password: hashedPassword,
+    },
+  });
+
+  return {
+    ...user,
+    password: undefined,
+  };
+}
+
+export async function isAuthenticated() {
+  const session = await getSession();
+  return !!session;
 }
