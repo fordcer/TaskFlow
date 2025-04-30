@@ -310,11 +310,6 @@ export default function FormCard({ mode }: Readonly<FormCardProps>) {
                     Sign up
                   </Link>
                 </div>
-                <div className="text-sm text-muted-foreground mt-2">
-                  <span className="text-xs text-muted-foreground">
-                    Demo credentials: demo@example.com / password
-                  </span>
-                </div>
               </div>
             ) : (
               <div className="text-sm text-muted-foreground mt-2">
