@@ -9,11 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getTasksByStatus, Task } from "@/lib/task-service";
 import { AnimatePresence, motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function DashboardPage() {
-  const [tasks, setTasks] = React.useState<Task[]>([]);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("all");
   const searchParams = useSearchParams();
   const taskId = searchParams.get("task");
   const taskRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -22,7 +23,7 @@ export default function DashboardPage() {
     const fetchTasks = async () => {
       setIsLoading(true);
       try {
-        const tasks = await getTasksByStatus("all");
+        const tasks = await getTasksByStatus(activeTab);
         setTasks(tasks);
       } catch (error) {
         console.error(error);
@@ -32,7 +33,7 @@ export default function DashboardPage() {
     };
 
     fetchTasks();
-  }, []);
+  }, [activeTab]);
 
   useEffect(() => {
     if (taskId && !isLoading && taskRefs.current[taskId]) {
@@ -46,15 +47,7 @@ export default function DashboardPage() {
   }, [taskId, isLoading, tasks]);
 
   const handleStatusChange = async (status: string) => {
-    setIsLoading(true);
-    try {
-      const filteredTasks = await getTasksByStatus(status);
-      setTasks(filteredTasks);
-    } catch (error) {
-      console.error("Failed to filter tasks:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    setActiveTab(status);
   };
 
   const handleTaskCreate = (newTask: Task) => {
@@ -84,6 +77,16 @@ export default function DashboardPage() {
     );
   };
 
+  const getDescription = () => {
+    if (activeTab === "all") {
+      return "You don't have any tasks yet. Start creating tasks.";
+    } else if (activeTab === "in-progress") {
+      return "You don't have any in-progress tasks.";
+    } else {
+      return "You don't have any completed tasks.";
+    }
+  };
+
   const tabItems = [
     { value: "all", label: "All Tasks" },
     { value: "in-progress", label: "In Progress" },
@@ -102,22 +105,35 @@ export default function DashboardPage() {
       className="space-y-4"
     >
       {tasks.map((task) => (
-        <TaskItem
+        <div
           key={task.id}
-          task={task}
-          onDelete={handleDeleteTask}
-          onComplete={handleCompleteTask}
-          onUpdate={handleUpdateTask}
-        />
+          ref={(el) => {
+            taskRefs.current[task.id] = el;
+          }}
+          className={
+            taskId === task.id
+              ? "ring-2 ring-primary ring-offset-2 rounded-lg"
+              : ""
+          }
+        >
+          <TaskItem
+            key={task.id}
+            task={task}
+            onDelete={handleDeleteTask}
+            onComplete={handleCompleteTask}
+            onUpdate={handleUpdateTask}
+          />
+        </div>
       ))}
     </motion.div>
   ) : (
     <EmptyPlaceholder>
       <EmptyPlaceholder.Icon name="task" />
-      <EmptyPlaceholder.Title>No tasks created</EmptyPlaceholder.Title>
+      <EmptyPlaceholder.Title>No tasks found</EmptyPlaceholder.Title>
       <EmptyPlaceholder.Description>
-        You don&apos;t have any tasks yet.
+        {getDescription()}
       </EmptyPlaceholder.Description>
+      <TaskButton mode="create" onCreate={handleTaskCreate} />
     </EmptyPlaceholder>
   );
 
@@ -160,9 +176,7 @@ export default function DashboardPage() {
           ))}
         </TabsList>
 
-        <TabsContent value="all">{renderTasks()}</TabsContent>
-        <TabsContent value="in-progress">{renderTasks()}</TabsContent>
-        <TabsContent value="completed">{renderTasks()}</TabsContent>
+        <TabsContent value={activeTab}>{renderTasks()}</TabsContent>
       </Tabs>
     </DashboardShell>
   );

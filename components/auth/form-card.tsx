@@ -174,6 +174,7 @@ export default function FormCard({ mode }: Readonly<FormCardProps>) {
               <Button
                 variant="outline"
                 onClick={() => handleOAuthSignIn("google")}
+                className="cursor-pointer"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -202,6 +203,7 @@ export default function FormCard({ mode }: Readonly<FormCardProps>) {
               <Button
                 variant="outline"
                 onClick={() => handleOAuthSignIn("github")}
+                className="cursor-pointer"
               >
                 <svg
                   viewBox="0 0 24 24"
