@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth-service";
+import { Prisma, Task as PrismaTask } from "@prisma/client";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -18,7 +19,7 @@ type Priority = "low" | "medium" | "high";
 export interface Task {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   status: "in-progress" | "completed";
   priority: Priority;
   dueDate: string | null;
@@ -28,9 +29,11 @@ export interface Task {
   userId: string;
 }
 
-function formatTask(task: any): Task {
+function formatTask(task: PrismaTask): Task {
   return {
     ...task,
+    status: task.status as "in-progress" | "completed",
+    priority: task.priority as Priority,
     dueDate: task.dueDate ? task.dueDate.toISOString() : null,
     createdAt: task.createdAt.toISOString(),
     updatedAt: task.updatedAt.toISOString(),
@@ -45,7 +48,7 @@ export async function getTasksByStatus(status: string): Promise<Task[]> {
       throw new Error("Unauthorized");
     }
 
-    let where: any = {
+    let where: Prisma.TaskWhereInput = {
       userId: user.id,
     };
 

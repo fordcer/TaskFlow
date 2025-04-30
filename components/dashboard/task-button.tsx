@@ -68,7 +68,7 @@ export default function TaskButton({
       mode === "update" && task
         ? {
             title: task.title,
-            description: task.description,
+            description: task.description ?? undefined,
             priority: task.priority,
             dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
             estimatedHours: task.estimatedHours?.toString() ?? "",
