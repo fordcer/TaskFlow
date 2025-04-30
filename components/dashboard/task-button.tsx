@@ -32,7 +32,7 @@ import {
 } from "../ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 import { Calendar } from "../ui/calendar";
 import { useState } from "react";
 import { createTask, Task, updateTask } from "@/lib/task-service";
@@ -41,12 +41,13 @@ import { toast } from "sonner";
 interface TaskButtonProps {
   task?: Task;
   onUpdate?: (updatedTask: Task) => void;
+  onCreate?: (newTask: Task) => void;
   mode: "create" | "update";
 }
 
 const formSchema = z.object({
   title: z.string().min(1, "Task title is required"),
-  description: z.string(),
+  description: z.string().optional(),
   priority: z.enum(["low", "medium", "high"]),
   dueDate: z.date().optional(),
   estimatedHours: z.string(),
@@ -55,6 +56,7 @@ const formSchema = z.object({
 export default function TaskButton({
   task,
   onUpdate,
+  onCreate,
   mode,
 }: Readonly<TaskButtonProps>) {
   const [isOpen, setIsOpen] = useState(false);
@@ -73,7 +75,7 @@ export default function TaskButton({
           }
         : {
             title: "",
-            description: "",
+            description: undefined,
             priority: "medium",
             dueDate: undefined,
             estimatedHours: "",
@@ -89,7 +91,7 @@ export default function TaskButton({
       if (mode === "update") {
         await handleUpdateTask(values);
       } else {
-        await createTask({
+        const newTask = await createTask({
           title,
           description,
           priority,
@@ -98,6 +100,10 @@ export default function TaskButton({
             ? Number.parseFloat(estimatedHours)
             : null,
         });
+
+        if (newTask && onCreate) {
+          onCreate(newTask);
+        }
 
         toast.success("Task created", {
           description: "Your task has been created successfully.",
@@ -212,7 +218,7 @@ export default function TaskButton({
             name="dueDate"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Date of birth</FormLabel>
+                <FormLabel>Due Date</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -238,7 +244,7 @@ export default function TaskButton({
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
-                      disabled={(date) => date < new Date()}
+                      disabled={(date) => date < subDays(new Date(), 1)}
                       initialFocus
                     />
                   </PopoverContent>
@@ -287,12 +293,7 @@ export default function TaskButton({
     >
       <DialogTrigger asChild>
         {mode === "update" ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => setIsOpen(true)}
-          >
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
             <Pencil className="h-4 w-4" />
             <span className="sr-only">Edit task</span>
           </Button>

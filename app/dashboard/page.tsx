@@ -8,13 +8,15 @@ import { EmptyPlaceholder } from "@/components/empty-placeholder";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getTasksByStatus, Task } from "@/lib/task-service";
 import { AnimatePresence, motion } from "framer-motion";
-import { useRouter } from "next/navigation";
-import React, { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import React, { useEffect, useRef } from "react";
 
 export default function DashboardPage() {
-  const router = useRouter();
   const [tasks, setTasks] = React.useState<Task[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const searchParams = useSearchParams();
+  const taskId = searchParams.get("task");
+  const taskRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -30,7 +32,18 @@ export default function DashboardPage() {
     };
 
     fetchTasks();
-  }, [router]);
+  }, []);
+
+  useEffect(() => {
+    if (taskId && !isLoading && taskRefs.current[taskId]) {
+      setTimeout(() => {
+        taskRefs.current[taskId]?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 100);
+    }
+  }, [taskId, isLoading, tasks]);
 
   const handleStatusChange = async (status: string) => {
     setIsLoading(true);
@@ -42,6 +55,10 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleTaskCreate = (newTask: Task) => {
+    setTasks((prev) => [newTask, ...prev]);
   };
 
   const handleDeleteTask = (id: string) => {
@@ -124,7 +141,7 @@ export default function DashboardPage() {
   return (
     <DashboardShell>
       <DashboardHeader heading="Tasks" text="Create and manage your tasks.">
-        <TaskButton mode="create" />
+        <TaskButton mode="create" onCreate={handleTaskCreate} />
       </DashboardHeader>
       <Tabs
         defaultValue="all"

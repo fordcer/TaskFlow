@@ -1,6 +1,6 @@
 "use client";
 
-import { Task } from "@/lib/task-service";
+import { Task, toggleTaskStatus } from "@/lib/task-service";
 import React, { useState } from "react";
 import {
   Card,
@@ -36,19 +36,24 @@ export default function TaskItem({
   const handleComplete = async () => {
     setIsCompleting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      onComplete(task.id);
-      toast(
-        task.status === "completed"
-          ? "Task marked as in progress"
-          : "Task completed",
-        {
-          description:
-            task.status === "completed"
-              ? "Your task has been marked as in progress."
-              : "Your task has been marked as completed.",
-        }
-      );
+      const updatedTask = await toggleTaskStatus(task.id);
+      if (updatedTask) {
+        toast(
+          updatedTask.status === "in-progress"
+            ? "Task marked as in progress"
+            : "Task completed",
+          {
+            description:
+              updatedTask.status === "in-progress"
+                ? "Your task has been marked as in progress."
+                : "Your task has been marked as completed.",
+          }
+        );
+
+        onComplete(task.id);
+      } else {
+        throw new Error("Failed to update task status");
+      }
     } catch (error) {
       console.error(error);
       toast.error("Something went wrong", {

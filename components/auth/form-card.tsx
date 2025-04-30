@@ -28,7 +28,6 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { signIn } from "next-auth/react";
-import { Github } from "lucide-react";
 
 interface FormCardProps {
   mode: "login" | "signup";
@@ -116,11 +115,8 @@ export default function FormCard({ mode }: Readonly<FormCardProps>) {
     });
 
     if (!response.ok) {
-      toast.error("Signup failed", {
-        description: "An account with this email might already exist.",
-      });
       const error = await response.json();
-      throw new Error(error.message || "Failed to register");
+      throw new Error(error.message ?? "Failed to register");
     }
 
     toast("Account created", {
@@ -138,6 +134,7 @@ export default function FormCard({ mode }: Readonly<FormCardProps>) {
     try {
       await signIn(provider, { callbackUrl: "/dashboard" });
     } catch (error) {
+      console.error(error);
       toast.error("Something went wrong", {
         description: "Please try again later.",
       });
